@@ -8,7 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * 基本测试：启动 App，验证 UI，关闭 App
+ * 基本测试：启动 App，验证 UI， 关闭 App
  * 
  * 运行方式：
  * adb shell am instrument -w -r \
