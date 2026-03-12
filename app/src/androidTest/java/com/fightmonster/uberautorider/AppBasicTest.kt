@@ -1,6 +1,6 @@
 package com.fightmonster.uberautorider
 
-import androidx.test.ext.junit.rules.activityScenarioRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import org.junit.Rule
@@ -20,7 +20,7 @@ import org.junit.runner.RunWith
 class AppBasicTest {
 
     @get:Rule
-    val activityRule = activityScenarioRule<MainActivity>()
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     /**
      * 测试 1: 启动 App 并验证没有崩溃
