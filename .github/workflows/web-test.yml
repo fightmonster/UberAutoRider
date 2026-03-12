@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Web Tests
         run: |
-          pytest tests/test_uber_web.py -v --headed
+          pytest tests/test_uber_web.py -v
 
       - name: Upload Screenshots
         if: always()
