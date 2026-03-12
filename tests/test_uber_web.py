@@ -5,6 +5,7 @@ Uber Web 自动化测试
 import pytest
 from playwright.sync_api import sync_playwright, expect
 import os
+import re
 
 
 class TestUberWeb:
@@ -31,8 +32,8 @@ class TestUberWeb:
         # 访问 Uber 官网
         page.goto("https://www.uber.com", timeout=60000)
         
-        # 验证页面加载
-        expect(page).to_have_title(/Uber/i)
+        # 验证页面加载 - 使用 re.compile 创建正则表达式
+        expect(page).to_have_title(re.compile("Uber", re.IGNORECASE))
         
         # 截图
         os.makedirs("screenshots", exist_ok=True)
@@ -46,7 +47,7 @@ class TestUberWeb:
         page.goto("https://auth.uber.com/login/", timeout=60000)
         
         # 验证登录元素存在
-        expect(page).to_have_title(/Uber/i)
+        expect(page).to_have_title(re.compile("Uber", re.IGNORECASE))
         
         # 截图
         page.screenshot(path="screenshots/uber_login.png")
