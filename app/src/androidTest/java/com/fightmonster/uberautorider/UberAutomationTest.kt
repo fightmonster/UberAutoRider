@@ -214,6 +214,151 @@ class UberAutomationTest {
         }
     }
 
+    /**
+     * 自动打车：通过 Deep Link 打开 Uber，找到最大按钮并点击
+     * 
+     * 使用方法：
+     * adb shell am instrument -w -r \
+     *   -e class com.fightmonster.uberautorider.UberAutomationTest#testAutoRideFindLargestButton \
+     *   com.fightmonster.uberautorider/androidx.test.runner.AndroidJUnitRunner
+     * 
+     * 查看日志：
+     * adb logcat -s UberAutoRider:*
+     */
+    @Test
+    fun testAutoRideFindLargestButton() {
+        val context = InstrumentationRegistry.getInstrumentation().context
+        
+        // 1. 通过 Deep Link 打开 Uber
+        logToLogcat("=== 开始自动打车流程 ===")
+        logToLogcat("步骤 1: 通过 Deep Link 打开 Uber")
+        
+        val deepLinkUri = android.net.Uri.Builder()
+            .scheme("uber")
+            .authority("")
+            .appendQueryParameter("action", "setPickup")
+            .appendQueryParameter("pickup", "myLocation")
+            .appendQueryParameter("dropoff[formatted_address]", "北京站")
+            .appendQueryParameter("product_id", "uberx")
+            .build()
+        
+        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, deepLinkUri)
+        intent.setPackage(UBER_PACKAGE)
+        intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        
+        context.startActivity(intent)
+        
+        // 2. 等待 Uber 顶层窗口出现
+        logToLogcat("步骤 2: 等待 Uber 顶层窗口加载")
+        val uberLoaded = device.wait(Until.hasObject(By.pkg(UBER_PACKAGE).depth(0)), TIMEOUT * 4)
+        
+        if (!uberLoaded) {
+            logToLogcat("错误: Uber 未能在指定时间内加载")
+            throw RuntimeException("Uber App 加载超时")
+        }
+        
+        logToLogcat("Uber 已成功加载")
+        
+        // 额外等待 UI 渲染
+        Thread.sleep(3000)
+        device.waitForIdle(TIMEOUT * 2)
+        
+        // 3. 获取所有可点击元素
+        logToLogcat("步骤 3: 扫描所有可点击元素")
+        val clickableElements = device.findObjects(By.clickable(true))
+        
+        logToLogcat("找到 ${clickableElements.size} 个可点击元素")
+        
+        if (clickableElements.isEmpty()) {
+            logToLogcat("警告: 未找到任何可点击元素")
+            return
+        }
+        
+        // 4. 找到面积最大的按钮
+        logToLogcat("步骤 4: 寻找面积最大的按钮")
+        var largestButton: UiObject2? = null
+        var maxSize = 0L
+        
+        for (element in clickableElements) {
+            val bounds = element.visibleBounds
+            val size = bounds.width().toLong() * bounds.height()
+            
+            // 打印每个元素的信息（调试用）
+            logToLogcat("  元素: 类名=${element.className}, 文本=${element.text}, " +
+                       "描述=${element.contentDescription}, 尺寸=${bounds.width()}x${bounds.height()}")
+            
+            if (size > maxSize) {
+                maxSize = size
+                largestButton = element
+            }
+        }
+        
+        // 5. 显示最大按钮信息并点击
+        if (largestButton != null) {
+            val bounds = largestButton.visibleBounds
+            val text = largestButton.text ?: "(无文本)"
+            val contentDesc = largestButton.contentDescription ?: "(无描述)"
+            val className = largestButton.className ?: "(未知)"
+            val resourceId = largestButton.resourceName ?: "(无资源ID)"
+            
+            // 输出详细信息到 logcat（会被 Toast 显示）
+            logToLogcat("========================================")
+            logToLogcat("🎯 找到最大按钮！")
+            logToLogcat("  文本: $text")
+            logToLogcat("  内容描述: $contentDesc")
+            logToLogcat("  类名: $className")
+            logToLogcat("  资源ID: $resourceId")
+            logToLogcat("  尺寸: ${bounds.width()} x ${bounds.height()} = $maxSize 像素")
+            logToLogcat("  位置: (${bounds.left}, ${bounds.top})")
+            logToLogcat("========================================")
+            
+            // 使用 Toast 显示（通过 shell 命令）
+            showToastViaShell("最大按钮: $text | 尺寸: ${bounds.width()}x${bounds.height()}")
+            
+            // 等待一下让用户看到 Toast
+            Thread.sleep(2000)
+            
+            // 6. 点击最大按钮
+            logToLogcat("步骤 5: 点击最大按钮")
+            largestButton.click()
+            
+            logToLogcat("已点击按钮，等待响应...")
+            device.waitForIdle(TIMEOUT * 2)
+            
+        } else {
+            logToLogcat("错误: 未能找到任何按钮")
+        }
+        
+        logToLogcat("=== 自动打车流程完成 ===")
+    }
+
+    /**
+     * 辅助方法：输出日志到 logcat
+     */
+    private fun logToLogcat(message: String) {
+        android.util.Log.d("UberAutoRider", message)
+        println("[UberAutoRider] $message")
+    }
+
+    /**
+     * 辅助方法：通过 shell 命令显示 Toast
+     * 注意：需要 TOAST_NOTIFICATIONS_PERMISSION 或 root 权限
+     */
+    private fun showToastViaShell(message: String) {
+        try {
+            // 方法 1: 使用 service call（需要权限）
+            val command = "service call notification 1 s16 \"$message\""
+            device.executeShellCommand(command)
+            logToLogcat("Toast 命令已发送: $message")
+        } catch (e: Exception) {
+            logToLogcat("Toast 显示失败: ${e.message}")
+            // 备选方案：直接用 logcat 输出
+            logToLogcat("=== TOAST 消息 ===")
+            logToLogcat(message)
+            logToLogcat("==================")
+        }
+    }
+
     companion object {
         private const val TAG = "UberAutomation"
     }
